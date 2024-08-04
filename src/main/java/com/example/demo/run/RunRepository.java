@@ -8,6 +8,7 @@ import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 import com.example.demo.DemoApplication;
@@ -16,44 +17,47 @@ import jakarta.annotation.PostConstruct;
 
 @Repository
 public class RunRepository {
-  private static final Logger log = LoggerFactory.getLogger(DemoApplication.class);
+    private static final Logger log = LoggerFactory.getLogger(DemoApplication.class);
     private List<Run> runs = new ArrayList<>();
 
+    private final JdbcClient jdbcClient;
+
+    public RunRepository(JdbcClient jdbcClient) {
+        this.jdbcClient = jdbcClient;
+    }
+
     List<Run> findAll() {
-        return runs;
+        return jdbcClient.sql("select * from run").query(Run.class).list();
     }
 
     Optional<Run> findById(Integer id) {
-        return runs.stream().filter(run -> run.id() == id).findFirst();
+        return jdbcClient.sql("select * from run where id = :id").param("id", id).query(Run.class).optional();
     }
 
-    List<Run> updateAll() {
-        return runs;
+    // List<Run> updateAll() {
+    // return runs;
+    // }
+
+    public void create(Run run) {
+        jdbcClient.sql(
+                "insert into Run (id, title, miles, started_on, completed_on, location) values (?,?,?,?,?,?)")
+                .params(List.of(run.id(), run.title(), run.miles(), run.startedOn(), run.completedOn(),
+                        run.location().toString()))
+                .update();
     }
 
-    void create(Run run) {
-        runs.add(run);
-    }
-
-    void updateById(Run run, Integer id) {
+    public void updateById(Run run, Integer id) {
         Optional<Run> existingRun = findById(id);
-        log.info("update "+ existingRun);
+        log.info("update " + existingRun);
         if (existingRun.isPresent()) {
-            runs.set(runs.indexOf(existingRun.get()), run);
+            jdbcClient.sql("update  run set title=?, miles=?, completed_on=?, started_on=?, location=? where id=?")
+                    .params(List.of(run.title(), run.miles(), run.completedOn(), run.startedOn(),
+                            run.location().toString(), id))
+                    .update();
         }
     }
 
-    void deleteById(Integer id) {
-        runs.removeIf(run -> run.id().equals(id));
-    }
-    
-    @PostConstruct
-    private void init() {
-        runs.add(new Run("Monday", 1, LocalDateTime.now(), LocalDateTime.now().plus(30, ChronoUnit.MINUTES), 4,
-                Location.INDOOR));
-        runs.add(new Run("Tuesday", 2, LocalDateTime.now(), LocalDateTime.now().plus(40, ChronoUnit.MINUTES), 4,
-                Location.INDOOR));
-        runs.add(new Run("Wednesday", 3, LocalDateTime.now(), LocalDateTime.now().plus(50, ChronoUnit.MINUTES), 4,
-                Location.INDOOR));
+    public void deleteById(Integer id) {
+        jdbcClient.sql("delete from run where id= :id").param("id", id).update();
     }
 }
