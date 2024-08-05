@@ -13,16 +13,14 @@ import org.springframework.stereotype.Repository;
 
 import com.example.demo.DemoApplication;
 
-import jakarta.annotation.PostConstruct;
-
 @Repository
-public class RunRepository {
+public class JdbcClientRunRepository {
     private static final Logger log = LoggerFactory.getLogger(DemoApplication.class);
     private List<Run> runs = new ArrayList<>();
 
     private final JdbcClient jdbcClient;
 
-    public RunRepository(JdbcClient jdbcClient) {
+    public JdbcClientRunRepository(JdbcClient jdbcClient) {
         this.jdbcClient = jdbcClient;
     }
 
@@ -57,7 +55,15 @@ public class RunRepository {
         }
     }
 
+    public int count() {
+        return jdbcClient.sql("select * from run").query().listOfRows().size();
+    }
+
     public void deleteById(Integer id) {
         jdbcClient.sql("delete from run where id= :id").param("id", id).update();
+    }
+
+    public void saveAll(List<Run> runs) {
+        runs.stream().forEach(this::create);
     }
 }

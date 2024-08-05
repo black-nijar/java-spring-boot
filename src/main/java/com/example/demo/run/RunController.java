@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.example.demo.DemoApplication;
+import org.springframework.web.bind.annotation.RequestParam;
+
 
 /**
  * RunController
@@ -30,9 +32,9 @@ import com.example.demo.DemoApplication;
 public class RunController {
     private static final Logger log = LoggerFactory.getLogger(DemoApplication.class);
 
-    private final RunRepository runRepository;
+    private final RunReposity runRepository;
 
-    public RunController(RunRepository runRepository) {
+    public RunController(RunReposity runRepository) {
         this.runRepository = runRepository;
     }
 
@@ -53,19 +55,25 @@ public class RunController {
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping
     void create(@RequestBody Run run) {
-        runRepository.create(run);
+        runRepository.save(run);
     }
 
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PutMapping("{id}")
     void updateById(@RequestBody Run run, @PathVariable Integer id) {
         log.info("data :" + run);
-        runRepository.updateById(run, id);
+        runRepository.save(run);
     }
 
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @DeleteMapping("{id}")
     void deleteById(@PathVariable Integer id) {
-        runRepository.deleteById(id);
+        runRepository.delete(runRepository.findById(id).get());
     }
+
+    @GetMapping("/location/{location}")
+    List<Run> findByLocation(@PathVariable String location) {
+        return runRepository.findAllByLocation(location);
+    }
+    
 }
